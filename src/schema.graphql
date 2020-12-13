@@ -16,6 +16,12 @@ type Mutation {
 	updateReview(id: ID!, data: UpdateReviewInput!): Review!
 }
 
+type Subscription {
+	count: Int!
+	review(bookId: ID!): Review!
+	book(userId: ID!): Book!
+}
+
 input UpdateBookInput {
 	title: String
 	price: Float

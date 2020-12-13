@@ -12,7 +12,7 @@ const Mutation = {
 		db.users.push(user);
 		return user;
 	},
-	createBook(parent, args, { db }, info) {
+	createBook(parent, args, { pubsub, db }, info) {
 		const authorExist = db.users.some((user) => user.id === args.data.author);
 		if (!authorExist) {
 			throw new Error("Author does'nt exist");
@@ -22,9 +22,11 @@ const Mutation = {
 			...args.data
 		};
 		db.books.push(book);
+
+		pubsub.publish(`book ${args.data.author}`, { book });
 		return book;
 	},
-	createReview(parent, args, { db }, info) {
+	createReview(parent, args, { db, pubsub }, info) {
 		const userExist = db.users.some((user) => user.id === args.data.author);
 		const bookExist = db.books.some((book) => book.id === args.data.book);
 		if (!userExist) {
@@ -38,6 +40,8 @@ const Mutation = {
 			...args.data
 		};
 		db.reviews.push(review);
+
+		pubsub.publish(`review ${args.data.book}`, { review });
 		return review;
 	},
 	deleteUser(parent, args, { db }, info) {
