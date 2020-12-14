@@ -17,15 +17,15 @@ type Mutation {
 }
 
 type Subscription {
-	count: Int!
-	review(bookId: ID!): Review!
-	book(userId: ID!): Book!
+	review(bookId: ID!): ReviewSubscriptionPayload!
+	book: BookSubscriptionPayload!
 }
 
 input UpdateBookInput {
 	title: String
 	price: Float
 	inStock: Boolean
+	published: Boolean
 }
 
 input UpdateUserInput {
@@ -46,6 +46,7 @@ input CreateBookInput {
 	title: String!
 	price: Float!
 	author: ID!
+	published: Boolean!
 	inStock: Boolean
 }
 
@@ -75,6 +76,7 @@ type Book {
 	title: String!
 	author: User!
 	price: Float!
+	published: Boolean!
 	releaseYear: String
 	rating: Float
 	inStock: Boolean
@@ -86,4 +88,20 @@ type Review {
 	text: String!
 	author: User!
 	book: Book!
+}
+
+enum MutationType {
+	CREATED
+	UPDATED
+	DELETED
+}
+
+type BookSubscriptionPayload {
+	mutation: MutationType!
+	data: Book!
+}
+
+type ReviewSubscriptionPayload {
+	mutation: MutationType!
+	data: Review!
 }

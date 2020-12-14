@@ -23,7 +23,13 @@ const Mutation = {
 		};
 		db.books.push(book);
 
-		pubsub.publish(`book ${args.data.author}`, { book });
+		if (book.published)
+			pubsub.publish(`book`, {
+				book: {
+					mutation: 'CREATED',
+					data: book
+				}
+			});
 		return book;
 	},
 	createReview(parent, args, { db, pubsub }, info) {
@@ -41,7 +47,12 @@ const Mutation = {
 		};
 		db.reviews.push(review);
 
-		pubsub.publish(`review ${args.data.book}`, { review });
+		pubsub.publish(`review ${args.data.book}`, {
+			review: {
+				mutation: 'CREATED',
+				data: review
+			}
+		});
 		return review;
 	},
 	deleteUser(parent, args, { db }, info) {
@@ -60,19 +71,34 @@ const Mutation = {
 		db.reviews = db.reviews.filter((review) => review.author === args.id);
 		return deletedUser[0];
 	},
-	deleteBook(parent, args, { db }, info) {
+	deleteBook(parent, args, { db, pubsub }, info) {
 		const bookIndex = db.books.findIndex((book) => book.id === args.id);
 		if (bookIndex === -1) throw new Error('Book not found');
-		const deletedBook = db.books.splice(bookIndex, 1);
+		const [ deletedBook ] = db.books.splice(bookIndex, 1);
 		db.reviews = db.reviews.filter((review) => review.book !== args.id);
-		return deletedBook[0];
+
+		if (deletedBook.published)
+			pubsub.publish('book', {
+				book: {
+					mutation: 'DELETED',
+					data: deletedBook
+				}
+			});
+
+		return deletedBook;
 	},
-	deleteReview(parent, args, { db }, info) {
+	deleteReview(parent, args, { db, pubsub }, info) {
 		const reviewIndex = db.reviews.findIndex((review) => review.id === args.id);
 		if (reviewIndex === -1) throw new Error('Review not found');
-		const deletedReview = db.reviews.splice(reviewIndex, 1);
+		const [ deletedReview ] = db.reviews.splice(reviewIndex, 1);
+		pubsub.publish(`review ${deletedReview.book}`, {
+			review: {
+				mutation: 'DELETED',
+				data: deletedReview
+			}
+		});
 
-		return deletedReview[0];
+		return deletedReview;
 	},
 
 	updateUser(parent, args, { db }, info) {
@@ -97,22 +123,59 @@ const Mutation = {
 		return user;
 	},
 
-	updateBook(parent, args, { db }, info) {
+	updateBook(parent, args, { db, pubsub }, info) {
 		const { id, data } = args;
 		const book = db.books.find((book) => book.id === id);
 		if (!book) throw new Error('Book not found.');
+
+		const originalBook = { ...book };
 		//title, price, author, instock
 		if (typeof data.title === 'string') book.title = data.title;
-		if (typeof data.price === 'float') book.price = data.price;
-		if (typeof book.inStock === 'boolean') book.inStock = data.inStock;
+		if (typeof data.price === 'number') book.price = data.price;
+		if (typeof data.inStock === 'boolean') book.inStock = data.inStock;
+		if (typeof data.published === 'boolean') {
+			book.published = data.published;
+
+			if (originalBook.published && !book.published) {
+				//deleted
+				pubsub.publish('book', {
+					book: {
+						mutation: 'DELETED',
+						data: originalBook
+					}
+				});
+			} else if (!originalBook.published && book.published) {
+				//created
+				pubsub.publish('book', {
+					book: {
+						mutation: 'CREATED',
+						data: book
+					}
+				});
+			}
+		} else if (book.published) {
+			//updated
+			pubsub.publish('book', {
+				book: {
+					mutation: 'UPDATED',
+					data: book
+				}
+			});
+		}
 
 		return book;
 	},
-	updateReview(parent, args, { db }, info) {
+	updateReview(parent, args, { db, pubsub }, info) {
 		const { id, data } = args;
 		const review = db.reviews.find((review) => review.id === id);
 		if (!review) throw new Error('Review not found.');
 		if (typeof data.text === 'string') review.text = data.text;
+		pubsub.publish(`review ${review.book}`, {
+			review: {
+				mutation: 'UPDATED',
+				data: review
+			}
+		});
 		return review;
 	}
 };

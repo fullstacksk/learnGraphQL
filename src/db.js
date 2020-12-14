@@ -27,6 +27,7 @@ const books = [
 		releaseYear: 2020,
 		author: '2',
 		inStock: true,
+		published: true,
 		rating: 4.8,
 		price: 999.45
 	},
@@ -36,6 +37,7 @@ const books = [
 		releaseYear: 2020,
 		author: '2',
 		inStock: false,
+		published: false,
 		rating: 4.8,
 		price: 456
 	},
@@ -44,6 +46,7 @@ const books = [
 		title: 'Datastructure with JS',
 		releaseYear: 2020,
 		author: '3',
+		published: true,
 		inStock: true,
 		price: 999.45
 	}

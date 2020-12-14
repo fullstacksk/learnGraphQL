@@ -1,18 +1,4 @@
 const Subscription = {
-	count: {
-		subscribe(parent, args, { pubsub }, info) {
-			let count = 0;
-
-			setInterval(() => {
-				count++;
-				pubsub.publish('count', {
-					count
-				});
-			}, 2000);
-			return pubsub.asyncIterator('count');
-		}
-	},
-
 	review: {
 		subscribe(parent, { bookId }, { pubsub, db }, info) {
 			const book = db.books.find((book) => book.id === bookId);
@@ -26,10 +12,7 @@ const Subscription = {
 
 	book: {
 		subscribe(parent, { userId }, { db, pubsub }, info) {
-			const user = db.users.find((user) => user.id === userId);
-			if (!user) throw new Error('User not found');
-
-			return pubsub.asyncIterator(`book ${userId}`);
+			return pubsub.asyncIterator(`book`);
 		}
 	}
 };
